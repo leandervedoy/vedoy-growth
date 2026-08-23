@@ -284,7 +284,7 @@ function Header({
 
 function Landing({ login, register }: { login: () => void; register: () => void }) {
   return (
-    <>
+    <div className="landing-studio">
       <Header login={login} />
       <section className="hero landing-hero" id="top">
         <div className="grid-glow"></div>
@@ -403,7 +403,7 @@ function Landing({ login, register }: { login: () => void; register: () => void 
         <span>Data inn. Klarhet ut.</span>
         <span>© 2026 VEDØY</span>
       </footer>
-    </>
+    </div>
   );
 }
 
