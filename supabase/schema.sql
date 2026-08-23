@@ -450,6 +450,20 @@ drop policy if exists "client access is denied" on public.shopify_store_connecti
 create policy "client access is denied" on public.shopify_store_connections for all to authenticated
 using (false) with check (false);
 
+-- Extended company profile shared across Growth modules.
+alter table public.business_profiles add column if not exists organization_number text check (organization_number is null or organization_number ~ '^[0-9]{9}$');
+alter table public.business_profiles add column if not exists owner_name text;
+alter table public.business_profiles add column if not exists founder_name text;
+alter table public.business_profiles add column if not exists managing_director_name text;
+alter table public.business_profiles add column if not exists representative_role text;
+drop policy if exists "owners can update their business profile" on public.business_profiles;
+drop policy if exists "owners and admins can update business profile" on public.business_profiles;
+create policy "owners and admins can update business profile" on public.business_profiles for update to authenticated
+using (private.has_business_access(id, array['owner','admin']))
+with check (private.has_business_access(id, array['owner','admin']));
+revoke update on public.business_profiles from authenticated;
+grant update (business_name, description, logo_url, organization_number, owner_name, founder_name, managing_director_name, representative_role, updated_at) on public.business_profiles to authenticated;
+
 -- Normalized Shopify webhook events. The webhook gateway writes with the
 -- service role; signed-in users may only read events for their own workspace.
 create table if not exists public.shopify_sync_events (

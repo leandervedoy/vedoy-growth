@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthContext, getWorkspaceContextFromAuth, refreshAuthContext, supabaseHeaders } from "@/lib/workspace";
+import { getAuthContext, getWorkspaceContext, getWorkspaceContextFromAuth, refreshAuthContext, supabaseHeaders } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -41,4 +41,27 @@ export async function POST(request: Request) {
     body: JSON.stringify({ business_id: profiles[0].id, user_id: context.user.id, role: "owner", display_name: String(context.user.user_metadata?.full_name || ""), email: context.user.email || "" }),
   });
   return NextResponse.json({ profile: profiles[0], role: "owner" });
+}
+
+export async function PATCH(request: Request) {
+  const context = await getWorkspaceContext(request);
+  if (!context) return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+  if (context.role !== "owner" && context.role !== "admin") return NextResponse.json({ error: "Kun eier og administrator kan redigere virksomheten." }, { status: 403 });
+  const body = await request.json().catch(() => null);
+  const value = (key: string, max: number) => typeof body?.[key] === "string" ? body[key].trim().slice(0, max) : "";
+  const businessName = value("businessName", 160);
+  const description = value("description", 1000);
+  const organizationNumber = value("organizationNumber", 20).replace(/\D/g, "");
+  const logoUrl = value("logoUrl", 2000);
+  if (!businessName || !description) return NextResponse.json({ error: "Navn og beskrivelse er påkrevd." }, { status: 400 });
+  if (organizationNumber && organizationNumber.length !== 9) return NextResponse.json({ error: "Organisasjonsnummer må ha 9 siffer." }, { status: 400 });
+  if (logoUrl) { try { new URL(logoUrl); } catch { return NextResponse.json({ error: "Logo må være en gyldig URL." }, { status: 400 }); } }
+  const response = await fetch(`${context.url}/rest/v1/business_profiles?id=eq.${context.business.id}&select=*`, {
+    method: "PATCH",
+    headers: supabaseHeaders(context, { Prefer: "return=representation" }),
+    body: JSON.stringify({ business_name: businessName, description, organization_number: organizationNumber || null, logo_url: logoUrl || null, owner_name: value("ownerName", 160) || null, founder_name: value("founderName", 160) || null, managing_director_name: value("managingDirectorName", 160) || null, representative_role: value("representativeRole", 160) || null, updated_at: new Date().toISOString() }),
+  });
+  const profiles = await response.json().catch(() => []);
+  if (!response.ok || !profiles[0]) return NextResponse.json({ error: "Kunne ikke lagre virksomhetsprofilen." }, { status: 500 });
+  return NextResponse.json({ profile: profiles[0], role: context.role });
 }

@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 export type WorkspaceRole = "owner" | "admin" | "manager" | "employee";
-export type WorkspaceContext = { token: string; url: string; key: string; user: { id: string; email?: string; user_metadata?: Record<string, unknown> }; business: { id: string; business_name: string; description: string; logo_url?: string | null }; role: WorkspaceRole };
+export type BusinessProfile = { id: string; business_name: string; description: string; logo_url?: string | null; organization_number?: string | null; owner_name?: string | null; founder_name?: string | null; managing_director_name?: string | null; representative_role?: string | null };
+export type WorkspaceContext = { token: string; url: string; key: string; user: { id: string; email?: string; user_metadata?: Record<string, unknown> }; business: BusinessProfile; role: WorkspaceRole };
 export type AuthContext = { token: string; url: string; key: string; user: { id: string; email?: string; user_metadata?: Record<string, unknown> } };
 
 function config(request: Request) {
@@ -36,10 +37,11 @@ export async function getWorkspaceContext(request: Request): Promise<WorkspaceCo
 export async function getWorkspaceContextFromAuth(auth: AuthContext): Promise<WorkspaceContext | null> {
   const { user } = auth;
   const headers = { apikey: auth.key, Authorization: `Bearer ${auth.token}` };
-  const ownerResponse = await fetch(`${auth.url}/rest/v1/business_profiles?owner_id=eq.${user.id}&select=id,business_name,description,logo_url&limit=1`, { headers, cache: "no-store" });
+  const fields = "id,business_name,description,logo_url,organization_number,owner_name,founder_name,managing_director_name,representative_role";
+  const ownerResponse = await fetch(`${auth.url}/rest/v1/business_profiles?owner_id=eq.${user.id}&select=${fields}&limit=1`, { headers, cache: "no-store" });
   const owned = ownerResponse.ok ? await ownerResponse.json().catch(() => []) : [];
   if (owned[0]) return { ...auth, user, business: owned[0], role: "owner" };
-  const memberResponse = await fetch(`${auth.url}/rest/v1/organization_members?user_id=eq.${user.id}&select=role,business:business_profiles(id,business_name,description,logo_url)&limit=1`, { headers, cache: "no-store" });
+  const memberResponse = await fetch(`${auth.url}/rest/v1/organization_members?user_id=eq.${user.id}&select=role,business:business_profiles(${fields})&limit=1`, { headers, cache: "no-store" });
   const memberships = memberResponse.ok ? await memberResponse.json().catch(() => []) : [];
   const membership = memberships[0];
   if (!membership?.business) return null;

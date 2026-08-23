@@ -245,6 +245,7 @@ function Header({
             <details className="settings">
               <summary>Innstillinger ⚙</summary>
               <div className="settings-menu">
+                <a href="/settings/company">Min bedrift</a>
                 <span>TEMA</span>
                 <button className={theme === "local" ? "active" : ""} onClick={() => changeTheme?.("local")}>
                   Haugesund lys
