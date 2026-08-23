@@ -60,3 +60,21 @@ npm.cmd --prefix packages/vedoy-calender test
 Growth-tabellene har Row Level Security og minimale database-grants. Brukere får bare tilgang til egen virksomhet. Bloggartikler kan administreres av Growth-eiere, mens bare publiserte artikler er offentlig lesbare.
 
 Ikke legg hemmelige nøkler i Git, chat, klientkode eller `localStorage`.
+# Shopify-integrasjon
+
+Vedøy Growth bruker Shopifys offisielle Node API-bibliotek og OAuth for å koble til én eller flere kundebutikker. Prisma-startmalen brukes ikke som en ekstra applikasjon eller database; Growth beholder Supabase som felles datalag.
+
+Opprett en app i Shopify Dev Dashboard og legg inn callback-adressen `https://growth.vedoy.store/api/shopify/callback`.
+
+Legg disse hemmelige servervariablene i `.env.local` og i Vercel:
+
+```env
+SHOPIFY_API_KEY=
+SHOPIFY_API_SECRET=
+SHOPIFY_TOKEN_ENCRYPTION_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+`SHOPIFY_TOKEN_ENCRYPTION_KEY` bør være en tilfeldig verdi på minst 32 tegn. Ingen av variablene skal prefikses med `NEXT_PUBLIC_`.
+
+I Growth åpner du **Tilkoblinger → Shopify**, legger inn `.myshopify.com`-domenet og velger **Koble sikkert med Shopify**. Kunden godkjenner lesetilgang til ordre og analyse. Dashboardet kan vise valgt butikk eller samlet statistikk for alle tilkoblede butikker.

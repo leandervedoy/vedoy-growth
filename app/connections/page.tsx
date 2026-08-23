@@ -4,6 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Settings = Record<string, string>;
 type Connection = { module_id: string; status: "configured" | "live"; settings: Settings; updated_at?: string };
+type ConnectionSource = { id: string; name: string; url: string };
+type ShopifySyncEvent = { delivery_id: string; shop_domain: string; topic: string; received_at: string };
 
 type Integration = {
   id: string;
@@ -62,6 +64,16 @@ const setupGuides: Record<string, SetupGuide> = {
 };
 
 const localKey = "vedoy-connections";
+const multiSourceModules = new Set(["shopify", "website"]);
+
+function sourcesFromSettings(settings: Settings, moduleId: string): ConnectionSource[] {
+  try {
+    const parsed = JSON.parse(settings.sourcesJson || "[]");
+    if (Array.isArray(parsed)) return parsed.filter((item): item is ConnectionSource => Boolean(item && typeof item.id === "string" && typeof item.name === "string" && typeof item.url === "string"));
+  } catch { /* legacy source below */ }
+  const legacy = moduleId === "shopify" ? settings.storeDomain : settings.siteUrl;
+  return legacy ? [{ id: "primary", name: legacy, url: legacy }] : [];
+}
 
 function readLocal(): Record<string, Connection> {
   try {
@@ -78,6 +90,10 @@ export default function ConnectionsPage() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [googleSetup, setGoogleSetup] = useState<{ configured?: boolean; serviceAccountEmail?: string | null }>({});
+  const [sources, setSources] = useState<ConnectionSource[]>([]);
+  const [sourceName, setSourceName] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [shopifySync, setShopifySync] = useState<{ configured: boolean; events: ShopifySyncEvent[]; loading: boolean }>({ configured: false, events: [], loading: true });
 
   const active = useMemo(() => integrations.find((integration) => integration.id === activeId) || integrations[0], [activeId]);
 
@@ -96,12 +112,39 @@ export default function ConnectionsPage() {
       })
       .catch(() => undefined);
     fetch("/api/google/setup").then((response) => response.ok ? response.json() : null).then((data) => data && setGoogleSetup(data)).catch(() => undefined);
+    fetch("/api/integrations/shopify/webhook")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setShopifySync({ configured: Boolean(data?.configured), events: data?.events || [], loading: false }))
+      .catch(() => setShopifySync({ configured: false, events: [], loading: false }));
   }, []);
 
   useEffect(() => {
-    setValues(connections[active.id]?.settings || {});
-    setMessage("");
+    const next = connections[active.id]?.settings || {};
+    setValues(next);
+    setSources(sourcesFromSettings(next, active.id));
+    setSourceName("");
+    setSourceUrl("");
+    const shopifyResult = new URLSearchParams(window.location.search).get("shopify");
+    setMessage(active.id === "shopify" && shopifyResult
+      ? shopifyResult === "connected" ? "Shopify-butikken er koblet til og klar for live statistikk." : "Shopify-koblingen ble ikke fullført. Kontroller appoppsettet og prøv igjen."
+      : "");
   }, [active.id, connections]);
+
+  function syncSources(next: ConnectionSource[], activeSourceId = values.activeSourceId || "all") {
+    setSources(next);
+    setValues({ ...values, sourcesJson: JSON.stringify(next), activeSourceId });
+  }
+
+  function addSource() {
+    const url = sourceUrl.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+    if (!url) return setMessage("Skriv inn en nettadresse eller .myshopify.com-domene først.");
+    if (sources.some((source) => source.url.toLowerCase() === url.toLowerCase())) return setMessage("Denne kilden er allerede lagt til.");
+    const item = { id: crypto.randomUUID(), name: sourceName.trim() || url, url };
+    syncSources([...sources, item], item.id);
+    setSourceName("");
+    setSourceUrl("");
+    setMessage("");
+  }
 
   function select(id: string) {
     setActiveId(id);
@@ -111,7 +154,11 @@ export default function ConnectionsPage() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    const connection: Connection = { module_id: active.id, status: "configured", settings: values, updated_at: new Date().toISOString() };
+    const legacyUrl = active.id === "shopify" ? values.storeDomain : values.siteUrl;
+    const settings = multiSourceModules.has(active.id) && sources.length === 0 && legacyUrl
+      ? { ...values, sourcesJson: JSON.stringify([{ id: "primary", name: legacyUrl, url: legacyUrl }]), activeSourceId: values.activeSourceId || "primary" }
+      : values;
+    const connection: Connection = { module_id: active.id, status: "configured", settings, updated_at: new Date().toISOString() };
     const local = { ...connections, [active.id]: connection };
     setConnections(local);
     localStorage.setItem(localKey, JSON.stringify(local));
@@ -120,7 +167,7 @@ export default function ConnectionsPage() {
       const response = await fetch("/api/workspace/connections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleId: active.id, settings: values }),
+        body: JSON.stringify({ moduleId: active.id, settings }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -145,6 +192,7 @@ export default function ConnectionsPage() {
     localStorage.setItem(localKey, JSON.stringify(local));
     try {
       await fetch("/api/workspace/connections", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ moduleId: active.id }) });
+      if (active.id === "shopify") await fetch("/api/shopify", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop: selectedShop }) });
     } finally {
       setMessage("Tilkoblingen er fjernet.");
     }
@@ -152,6 +200,7 @@ export default function ConnectionsPage() {
 
   const connected = connections[active.id];
   const guide = setupGuides[active.id];
+  const selectedShop = sources.find((source) => source.id === values.activeSourceId)?.url || sources[0]?.url || values.storeDomain || "";
 
   return (
     <main className="connections-page">
@@ -178,6 +227,12 @@ export default function ConnectionsPage() {
             <span className={connected ? "connection-badge is-connected" : "connection-badge"}>{connected ? "KONFIGURERT" : "IKKE TILKOBLET"}</span>
           </div>
           <form onSubmit={save}>
+            {multiSourceModules.has(active.id) && <section className="connection-sources">
+              <div><small>FLERE {active.id === "shopify" ? "NETTBUTIKKER" : "NETTSTEDER"}</small><p>Bytt aktiv kilde i dashboardet, eller velg samlet oversikt.</p></div>
+              <div className="connection-source-add"><input value={sourceName} onChange={(event) => setSourceName(event.target.value)} placeholder="Navn, f.eks. Vedøy Collective" /><input value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder={active.id === "shopify" ? "butikk.myshopify.com" : "https://bedrift.no"} /><button type="button" onClick={addSource}>Legg til</button></div>
+              {sources.length > 0 ? <><label>VIS I DASHBORDET<select value={values.activeSourceId || "all"} onChange={(event) => setValues({ ...values, activeSourceId: event.target.value })}><option value="all">Samlet oversikt ({sources.length})</option>{sources.map((source) => <option key={source.id} value={source.id}>{source.name}</option>)}</select></label><ul className="connection-source-list">{sources.map((source) => <li key={source.id}><span><b>{source.name}</b><small>{source.url}</small></span><button type="button" onClick={() => syncSources(sources.filter((item) => item.id !== source.id), values.activeSourceId === source.id ? "all" : values.activeSourceId)}>Fjern</button></li>)}</ul></> : <p className="connection-hint">Legg til minst én kilde. Eksisterende domene blir automatisk lagt til når du lagrer.</p>}
+              <p className="connection-hint">Live Shopify-tall samles først når hver butikk har egen sikker API-/OAuth-tilkobling. Nettstedsovervåkning kan sjekke én valgt adresse om gangen.</p>
+            </section>}
             {active.fields.map((field) => <label key={field.name}>{field.label}<input type={field.type || "text"} value={values[field.name] || ""} onChange={(event) => setValues({ ...values, [field.name]: event.target.value })} placeholder={field.placeholder} required /></label>)}
             <p className="connection-hint">{active.hint}</p>
             {guide && <aside className="connection-guide">
@@ -186,8 +241,20 @@ export default function ConnectionsPage() {
               {(active.id === "analytics" || active.id === "search") && <p className="service-account-line"><b>VEDØY GOOGLE-KONTO:</b> {googleSetup.serviceAccountEmail || "Ikke konfigurert ennå – kontakt Vedøy."}</p>}
               {guide.docsUrl && <a href={guide.docsUrl} target="_blank" rel="noreferrer">Åpne offisiell veiledning ↗</a>}
             </aside>}
+            {active.id === "shopify" && <aside className="shopify-sync-status">
+              <div>
+                <small>SHOPIFY-SYNK</small>
+                <b>{shopifySync.loading ? "Kontrollerer…" : shopifySync.configured ? "Mottaket er klart" : "Demo / ikke konfigurert"}</b>
+              </div>
+              <p>{shopifySync.events.length > 0 ? `${shopifySync.events.length} siste hendelser er tilgjengelige for virksomheten.` : "Ingen produkt-, ordre- eller kundehendelser er mottatt ennå."}</p>
+              {shopifySync.events[0] && <small>SIST MOTTATT: {new Date(shopifySync.events[0].received_at).toLocaleString("nb-NO")} · {shopifySync.events[0].topic}</small>}
+            </aside>}
             {message && <p className="connection-message">{message}</p>}
-            <div className="connection-actions"><button className="button button-lime" disabled={saving}>{saving ? "Lagrer…" : connected ? "Oppdater tilkobling" : "Lagre tilkobling"} →</button>{connected && <button type="button" className="button connection-remove" onClick={disconnect}>Fjern</button>}</div>
+            <div className="connection-actions">
+              <button className="button button-lime" disabled={saving}>{saving ? "Lagrer…" : connected ? "Oppdater tilkobling" : "Lagre tilkobling"} →</button>
+              {active.id === "shopify" && selectedShop && <a className="button shopify-oauth-button" href={`/api/shopify/connect?shop=${encodeURIComponent(selectedShop)}`}>Koble sikkert med Shopify ↗</a>}
+              {connected && <button type="button" className="button connection-remove" onClick={disconnect}>Fjern</button>}
+            </div>
           </form>
         </section>
       </div>

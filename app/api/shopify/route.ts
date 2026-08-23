@@ -1,15 +1,46 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { decryptShopifyToken, fetchShopifySnapshot, normalizeShopDomain } from "@/lib/shopify";
+import { getWorkspaceContext } from "@/lib/workspace";
 
-export async function GET() {
-  const domain = process.env.SHOPIFY_STORE_DOMAIN;
-  const token = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  if (!domain || !token) return NextResponse.json({ connected: false, reason: "Shopify is not connected yet." });
-  const query = `query GrowthSnapshot { orders(first: 100, query: "created_at:>=2026-01-01") { nodes { totalPriceSet { shopMoney { amount currencyCode } } } } abandonedCheckouts(first: 100) { nodes { id } } }`;
-  const response = await fetch(`https://${domain}/admin/api/2026-01/graphql.json`, { method: "POST", headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": token }, body: JSON.stringify({ query }), next: { revalidate: 900 } });
-  if (!response.ok) return NextResponse.json({ connected: false, reason: "Shopify returned an error." }, { status: 502 });
-  const json = await response.json();
-  if (json.errors) return NextResponse.json({ connected: false, reason: "Shopify query failed." }, { status: 502 });
-  const orders = json.data.orders.nodes;
-  const sales = orders.reduce((sum: number, order: { totalPriceSet: { shopMoney: { amount: string } } }) => sum + Number(order.totalPriceSet.shopMoney.amount), 0);
-  return NextResponse.json({ connected: true, sales, orders: orders.length, abandonedCheckouts: json.data.abandonedCheckouts.nodes.length });
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const context = await getWorkspaceContext(request);
+  if (!context) return NextResponse.json({ connected: false, reason: "Logg inn for å se Shopify-data." }, { status: 401 });
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return NextResponse.json({ connected: false, reason: "Shopify er ikke ferdig konfigurert på serveren." }, { status: 503 });
+  const selected = normalizeShopDomain(new URL(request.url).searchParams.get("shop") || "");
+  const admin = createClient(context.url, serviceKey, { auth: { persistSession: false } });
+  let query = admin.from("shopify_store_connections").select("shop_domain,encrypted_access_token,updated_at").eq("business_id", context.business.id).eq("status", "connected");
+  if (selected) query = query.eq("shop_domain", selected);
+  const { data, error } = await query;
+  if (error || !data?.length) return NextResponse.json({ connected: false, reason: "Ingen Shopify-butikk er koblet til." });
+
+  const snapshots = await Promise.allSettled(data.map((item) => fetchShopifySnapshot(new URL(request.url).host, item.shop_domain, decryptShopifyToken(item.encrypted_access_token))));
+  const stores = snapshots.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+  if (!stores.length) return NextResponse.json({ connected: false, reason: "Shopify svarte ikke. Kontroller tilgangene og koble til på nytt." }, { status: 502 });
+  return NextResponse.json({
+    connected: true,
+    sales: stores.reduce((sum, store) => sum + store.sales, 0),
+    orders: stores.reduce((sum, store) => sum + store.orders, 0),
+    abandonedCheckouts: 0,
+    stores,
+    partial: stores.length !== data.length,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function DELETE(request: Request) {
+  const context = await getWorkspaceContext(request);
+  if (!context) return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return NextResponse.json({ error: "Serveroppsettet mangler." }, { status: 503 });
+  const body = await request.json().catch(() => null);
+  const shop = normalizeShopDomain(typeof body?.shop === "string" ? body.shop : "");
+  const admin = createClient(context.url, serviceKey, { auth: { persistSession: false } });
+  let query = admin.from("shopify_store_connections").delete().eq("business_id", context.business.id);
+  if (shop) query = query.eq("shop_domain", shop);
+  const { error } = await query;
+  return error ? NextResponse.json({ error: "Kunne ikke fjerne Shopify-koblingen." }, { status: 500 }) : NextResponse.json({ ok: true });
 }

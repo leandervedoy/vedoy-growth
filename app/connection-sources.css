@@ -1,0 +1,12 @@
+.connection-sources{display:grid;gap:12px;margin:4px 0 2px;padding:18px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 88%,var(--bg))}
+.connection-sources p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.connection-source-add{display:grid;grid-template-columns:1fr 1.3fr auto;gap:8px}
+.connection-source-add input,.connection-sources select{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink)}
+.connection-source-add button,.connection-source-list button{padding:10px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--ink);cursor:pointer}
+.connection-source-list{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.connection-source-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border-top:1px solid var(--line)}
+.connection-source-list b,.connection-source-list small{display:block}
+.connection-source-list small{color:var(--muted);font:10px 'DM Mono'}
+.connection-sources>label{display:grid;gap:7px;color:var(--muted);font:10px 'DM Mono'}
+@media(max-width:680px){.connection-source-add{grid-template-columns:1fr}.connection-source-add button{width:100%}}
+.shopify-oauth-button{display:inline-flex;align-items:center;text-decoration:none;background:#111;color:#fff;border:1px solid #111}

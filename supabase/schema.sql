@@ -403,3 +403,70 @@ create policy "owners can read website checks" on public.website_status_checks f
 using (owner_id = (select auth.uid()) and private.has_business_access(business_id));
 create policy "owners can create website checks" on public.website_status_checks for insert to authenticated
 with check (owner_id = (select auth.uid()) and private.has_business_access(business_id));
+
+-- Incident reports (avvik) with immutable reporter and timestamp traceability.
+create table if not exists public.incident_reports (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.business_profiles(id) on delete cascade,
+  reported_by uuid not null references auth.users(id) on delete restrict,
+  title text not null check (char_length(title) between 5 and 160),
+  description text not null check (char_length(description) between 15 and 5000),
+  immediate_action text not null check (char_length(immediate_action) between 10 and 2000),
+  category text not null check (category in ('HSE', 'QUALITY', 'FINANCIAL')),
+  severity text not null check (severity in ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+  status text not null default 'open' check (status in ('open', 'in_progress', 'closed')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists incident_reports_business_created_idx on public.incident_reports(business_id, created_at desc);
+create index if not exists incident_reports_reported_by_created_idx on public.incident_reports(reported_by, created_at desc);
+alter table public.incident_reports enable row level security;
+revoke all on public.incident_reports from anon, authenticated;
+grant select, insert on public.incident_reports to authenticated;
+drop policy if exists "members can read business incident reports" on public.incident_reports;
+drop policy if exists "members can create incident reports" on public.incident_reports;
+create policy "members can read business incident reports" on public.incident_reports for select to authenticated
+using (private.has_business_access(business_id));
+create policy "members can create incident reports" on public.incident_reports for insert to authenticated
+with check (reported_by = (select auth.uid()) and private.has_business_access(business_id));
+
+-- Server-managed Shopify OAuth installations. Tokens are encrypted by the app before storage.
+create table if not exists public.shopify_store_connections (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.business_profiles(id) on delete cascade,
+  connected_by uuid not null references auth.users(id) on delete restrict,
+  shop_domain text not null check (shop_domain ~ '^[a-z0-9][a-z0-9-]*\.myshopify\.com$'),
+  encrypted_access_token text not null,
+  scopes text not null default '',
+  status text not null default 'connected' check (status in ('connected', 'revoked', 'error')),
+  installed_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (business_id, shop_domain)
+);
+create index if not exists shopify_store_connections_business_idx on public.shopify_store_connections(business_id, updated_at desc);
+alter table public.shopify_store_connections enable row level security;
+revoke all on public.shopify_store_connections from anon, authenticated;
+drop policy if exists "client access is denied" on public.shopify_store_connections;
+create policy "client access is denied" on public.shopify_store_connections for all to authenticated
+using (false) with check (false);
+
+-- Normalized Shopify webhook events. The webhook gateway writes with the
+-- service role; signed-in users may only read events for their own workspace.
+create table if not exists public.shopify_sync_events (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.business_profiles(id) on delete cascade,
+  delivery_id text not null unique,
+  shop_domain text not null check (shop_domain ~ '^[a-z0-9][a-z0-9-]*\.myshopify\.com$'),
+  topic text not null check (topic in ('orders/create', 'products/update', 'customers/create')),
+  payload jsonb not null default '{}'::jsonb,
+  received_at timestamptz not null default now()
+);
+create index if not exists shopify_sync_events_business_received_idx on public.shopify_sync_events(business_id, received_at desc);
+create index if not exists shopify_sync_events_shop_received_idx on public.shopify_sync_events(shop_domain, received_at desc);
+alter table public.shopify_sync_events enable row level security;
+revoke all on public.shopify_sync_events from anon, authenticated;
+grant select on public.shopify_sync_events to authenticated;
+grant select, insert, update, delete on public.shopify_sync_events to service_role;
+drop policy if exists "members can read Shopify sync events" on public.shopify_sync_events;
+create policy "members can read Shopify sync events" on public.shopify_sync_events for select to authenticated
+using (private.has_business_access(business_id));

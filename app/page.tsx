@@ -240,6 +240,7 @@ function Header({
           <>
             <span className="workspace-label">WORKSPACE / {businessName || "DIN VIRKSOMHET"}</span>
             <a href="/booking">Booking</a>
+            <a href="/avvik">Avvik</a>
             <a href="/libraries">Biblioteker</a>
             <details className="settings">
               <summary>Innstillinger ⚙</summary>
@@ -660,6 +661,10 @@ function ModuleBody({
   const configured = Boolean(connection);
   const socialAccount = social?.accounts?.[0];
   const configuredName = connection?.settings.username || connection?.settings.siteUrl || connection?.settings.storeDomain || connection?.settings.emailAddress || connection?.settings.provider;
+  let sources: Array<{ id: string; name: string; url: string }> = [];
+  try { const parsed = JSON.parse(connection?.settings.sourcesJson || "[]"); if (Array.isArray(parsed)) sources = parsed.filter((item): item is { id: string; name: string; url: string } => Boolean(item && typeof item.id === "string" && typeof item.name === "string" && typeof item.url === "string")); } catch { /* optional multi-source configuration */ }
+  const activeSource = sources.find((source) => source.id === connection?.settings.activeSourceId);
+  const sourceLabel = sources.length > 1 ? connection?.settings.activeSourceId === "all" || !activeSource ? `Samlet oversikt · ${sources.length} kilder` : activeSource.name : sources[0]?.name;
   if (moduleId === "sales") {
     return (
       <>
@@ -668,6 +673,7 @@ function ModuleBody({
           <span>{shopify?.connected ? `${shopify.orders || 0} ordre` : "Ingen data ennå"}</span>
           <a className="module-inline-link" href="/connections?module=shopify">{configured ? "Innstillinger" : "Koble Shopify"}</a>
         </div>
+        {sourceLabel && <small className="module-muted">Kilde: {sourceLabel}</small>}
       </>
     );
   }
@@ -800,6 +806,7 @@ function ModuleBody({
           <div className="website-score-row"><small>OPPETID {websiteHistory.uptimePercent ?? "—"}%</small><small>SNITT {websiteHistory.averageResponseTimeMs ?? "—"} MS</small></div>
         </> : null}
         {websiteStatus?.checkedAt && <small className="website-checked">Sist sjekket {new Date(websiteStatus.checkedAt).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}</small>}
+        {sourceLabel && <small className="website-checked">Kilde: {sourceLabel}</small>}
         {websiteStatus?.error && <p className="work-hours-error">{websiteStatus.error}</p>}
         <a className="module-action" href="/connections?module=website">{configured ? "Endre nettside" : "Koble nettside"} →</a>
       </div>

@@ -32,6 +32,8 @@ const allowedSettingKeys = new Set([
   "moduleTitle",
   "alertEmail",
   "alertThresholdMs",
+  "sourcesJson",
+  "activeSourceId",
 ]);
 
 function config(request: Request) {
