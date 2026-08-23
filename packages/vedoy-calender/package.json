@@ -1,0 +1,37 @@
+{
+  "name": "vedoy-calender",
+  "version": "0.1.0",
+  "description": "Calendar and availability utilities based on Vedøy Booking.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ./scripts/copy-assets.mjs",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": ["calendar", "booking", "availability", "ics", "vedoy"],
+  "author": "Vedøy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leandervedoy/vedoy-calender.git"
+  },
+  "bugs": { "url": "https://github.com/leandervedoy/vedoy-calender/issues" },
+  "homepage": "https://github.com/leandervedoy/vedoy-calender#readme",
+  "engines": { "node": ">=18" },
+  "peerDependencies": { "react": ">=18", "react-dom": ">=18" },
+  "devDependencies": { "@types/react": "^18.3.3", "typescript": "5.6.3" }
+}

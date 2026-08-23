@@ -10,5 +10,13 @@ export async function POST(request: Request) {
   const response = await fetch(`${url}/auth/v1/signup`, { method: "POST", headers: { "Content-Type": "application/json", apikey: key }, body: JSON.stringify({ email, password, data: { full_name: fullName, company, managing_director: managingDirector, phone } }) });
   const data = await response.json();
   if (!response.ok) return NextResponse.json({ error: data.msg || data.message || "Kunne ikke opprette konto." }, { status: response.status });
-  return NextResponse.json({ ok: true, confirmed: Boolean(data.access_token), message: data.access_token ? "Konto opprettet." : "Sjekk e-posten din for å bekrefte kontoen." });
+  const authenticated = Boolean(data.access_token);
+  const result = NextResponse.json({ ok: true, authenticated, message: authenticated ? "Konto opprettet." : "Sjekk e-posten din for å bekrefte kontoen." });
+  if (authenticated) {
+    const shared = { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/" };
+    result.cookies.set("vedoy-access-token", data.access_token, shared);
+    result.cookies.set("vedoy-refresh-token", data.refresh_token, shared);
+    result.cookies.set("vedoy-remember", "0", shared);
+  }
+  return result;
 }

@@ -1,4 +1,4 @@
 "use client";
 import { useState } from "react";
-const modules=["Nettside-status","E-post","Oppgaver","Vedøy Blogg","Kundehenvendelser","SEO og synlighet"];
+const modules=["Instagram / Meta","Google Analytics","Google Search Console","Facebook","Nettside-status","E-post","Booking","Oppgaver","Arbeidstimer","Vedøy Blogg","Kundehenvendelser","SEO og synlighet","Shopify"];
 export default function ModulesPage(){const [enabled,setEnabled]=useState<string[]>([]);return <main className="modules-page"><a className="blog-back" href="/">← Tilbake til dashboard</a><div className="eyebrow">VEDØY GROWTH / MODULER</div><h1>Bygg din<br/><span>arbeidsflate.</span></h1><p>Velg hvilke moduler som skal være tilgjengelige i dashboardet. Du kan endre dette senere.</p><div className="module-catalog">{modules.map(m=><button key={m} className={enabled.includes(m)?"enabled":""} onClick={()=>setEnabled(x=>x.includes(m)?x.filter(v=>v!==m):[...x,m])}><span>{enabled.includes(m)?"✓":"+"}</span><b>{m}</b><small>{enabled.includes(m)?"Lagt til":"Legg til modul"}</small></button>)}</div><a className="button button-lime" href="/module-builder">Lag HTML-modul ↗</a></main>}

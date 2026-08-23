@@ -1,0 +1,231 @@
+.workspace-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+}
+
+.workspace-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 255px;
+}
+
+.workspace-card .card-head {
+  gap: 14px;
+  min-width: 0;
+}
+
+.workspace-card .card-head > div {
+  min-width: 0;
+}
+
+.workspace-card .card-head h3 {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  line-height: 1.08;
+  margin-bottom: 0;
+}
+
+.module-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.connection-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--muted);
+  font: 10px "DM Mono";
+  letter-spacing: 0.02em;
+}
+
+.connection-row span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.status-dot.is-on {
+  background: var(--lime);
+  border-color: var(--lime);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lime) 16%, transparent);
+}
+
+.status-dot.is-error {
+  background: #e76f51;
+  border-color: #e76f51;
+  box-shadow: 0 0 0 5px color-mix(in srgb, #e76f51 16%, transparent);
+}
+
+.module-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.module-metrics span,
+.module-primary {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.module-metrics small,
+.module-primary small {
+  color: var(--muted);
+  font: 9px "DM Mono";
+}
+
+.module-metrics b,
+.module-primary b {
+  color: var(--ink);
+  font-size: clamp(20px, 2.4vw, 28px);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.module-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.website-score-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font: 9px "DM Mono";
+}
+
+.website-checked {
+  color: var(--muted);
+  font: 9px "DM Mono";
+}
+
+.website-history {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 42px;
+  padding: 7px 0 3px;
+  border-bottom: 1px solid var(--line);
+}
+
+.website-history i {
+  flex: 1 1 0;
+  min-width: 2px;
+  max-width: 12px;
+  border-radius: 2px 2px 0 0;
+  background: var(--lime);
+  opacity: .8;
+}
+
+.website-history i.is-down {
+  background: #e76f51;
+}
+
+.module-action {
+  align-self: flex-start;
+  margin-top: auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  padding: 9px 12px;
+  text-decoration: none;
+  font: 10px "DM Mono";
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.module-action:hover {
+  transform: translateY(-2px);
+  border-color: var(--lime);
+  background: color-mix(in srgb, var(--lime) 12%, transparent);
+}
+
+.workspace-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.workspace-refresh,
+.module-inline-link {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  font: 10px "DM Mono";
+}
+
+.workspace-refresh {
+  border: 1px solid var(--line);
+  padding: 11px 12px;
+}
+
+.workspace-refresh:hover,
+.module-inline-link:hover {
+  color: var(--lime);
+  border-color: var(--lime);
+}
+
+.workspace-refresh:disabled { opacity: .6; cursor: wait; }
+
+.work-hours-module .module-action:disabled { opacity: .6; cursor: wait; }
+.work-hours-error { margin: 0; color: #e76f51; font: 10px "DM Mono"; line-height: 1.45; }
+
+.custom-module-frame {
+  width: 100%;
+  min-height: 145px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: #fff;
+}
+
+.theme-picker {
+  max-width: min(92vw, 360px);
+}
+
+.theme-picker select {
+  max-width: 220px;
+  text-overflow: ellipsis;
+}
+
+.density-compact .workspace-card {
+  min-height: 220px;
+  gap: 14px;
+}
+
+@media (max-width: 760px) {
+  .workspace-card {
+    min-height: 220px;
+  }
+
+  .module-metrics {
+    grid-template-columns: 1fr;
+  }
+}

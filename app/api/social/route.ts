@@ -6,14 +6,17 @@ export async function GET() {
   const userId = process.env.INSTAGRAM_USER_ID;
   if (!token || !userId) return NextResponse.json({ connected: false, accounts: [] });
   const base = `https://graph.facebook.com/${GRAPH_VERSION}/${userId}`;
-  const [profileResponse, insightResponse] = await Promise.all([
+  const [profileResponse, insightResponse, mediaResponse] = await Promise.all([
     fetch(`${base}?fields=username,name,followers_count,media_count&access_token=${encodeURIComponent(token)}`, { next: { revalidate: 900 } }),
-    fetch(`${base}/insights?metric=audience_country&period=lifetime&access_token=${encodeURIComponent(token)}`, { next: { revalidate: 900 } })
+    fetch(`${base}/insights?metric=audience_country&period=lifetime&access_token=${encodeURIComponent(token)}`, { next: { revalidate: 900 } }),
+    fetch(`${base}/media?fields=id,caption,media_type,permalink,timestamp,like_count,comments_count&limit=6&access_token=${encodeURIComponent(token)}`, { next: { revalidate: 900 } })
   ]);
   if (!profileResponse.ok) return NextResponse.json({ connected: false, accounts: [], reason: "Meta returned an error." }, { status: 502 });
   const profile = await profileResponse.json();
   const insight = insightResponse.ok ? await insightResponse.json() : { data: [] };
+  const media = mediaResponse.ok ? await mediaResponse.json() : { data: [] };
   const countries = insight.data?.[0]?.values?.[0]?.value ?? {};
   const topCountry = Object.entries(countries).sort(([, a], [, b]) => Number(b) - Number(a))[0];
-  return NextResponse.json({ connected: true, accounts: [{ id: userId, platform: "instagram", username: profile.username, name: profile.name, followers: profile.followers_count ?? 0, topCountry: topCountry?.[0] ?? null, topCountryFollowers: topCountry?.[1] ?? null }] });
+  const posts = (media.data || []).map((post: { id: string; caption?: string; media_type?: string; permalink?: string; timestamp?: string; like_count?: number; comments_count?: number }) => ({ id: post.id, caption: post.caption?.slice(0, 140) || "Uten bildetekst", type: post.media_type || "POST", permalink: post.permalink || null, timestamp: post.timestamp || null, likes: post.like_count ?? 0, comments: post.comments_count ?? 0 }));
+  return NextResponse.json({ connected: true, accounts: [{ id: userId, platform: "instagram", username: profile.username, name: profile.name, followers: profile.followers_count ?? 0, topCountry: topCountry?.[0] ?? null, topCountryFollowers: topCountry?.[1] ?? null }], posts });
 }

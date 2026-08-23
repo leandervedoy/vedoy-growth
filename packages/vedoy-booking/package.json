@@ -1,0 +1,17 @@
+{
+  "name": "vedoy-booking",
+  "version": "0.1.0",
+  "description": "A service, pricing and destination picker for Vedøy Booking.",
+  "type": "module",
+  "main": "./dist/react.js",
+  "types": "./dist/react.d.ts",
+  "exports": { ".": { "types": "./dist/react.d.ts", "import": "./dist/react.js" }, "./styles.css": "./dist/styles.css" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": { "build": "tsc -p tsconfig.json && node ./scripts/copy-assets.mjs", "test": "npm run build" },
+  "keywords": ["booking", "pricing", "destination", "vedoy"],
+  "author": "Vedøy",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/leandervedoy/vedoy-booking.git" },
+  "peerDependencies": { "react": ">=18", "react-dom": ">=18" },
+  "devDependencies": { "@types/react": "^18.3.3", "typescript": "5.6.3" }
+}
