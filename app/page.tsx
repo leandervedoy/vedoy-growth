@@ -329,9 +329,51 @@ function Landing({ login, register }: { login: () => void; register: () => void 
         <i>×</i>
         <span>ANALYTICS</span>
         <i>×</i>
+        <span>BOOKING</span>
+        <i>×</i>
+        <span>KALENDER</span>
+        <i>×</i>
+        <span>TEAM</span>
+        <i>×</i>
         <span>AI INSIGHTS</span>
         <i>×</i>
         <span>PERSONLIG OPPFØLGING</span>
+      </section>
+      <section className="studio-surface" id="studio">
+        <div className="surface-sidebar">
+          <div className="surface-logo">VØ</div>
+          <span>Growth for virksomheter</span>
+          <a href="/register">Registrer virksomhet</a>
+          <a href="/login">Logg inn</a>
+          <a href="/libraries">Vedøy libraries</a>
+        </div>
+        <div className="surface-main">
+          <div className="surface-top">
+            <div>
+              <div className="eyebrow">ARBEIDSFLATE / KLAR TIL BRUK</div>
+              <h2>Velg modulene bedriften trenger.</h2>
+            </div>
+            <button className="button button-lime" onClick={register}>Åpne Growth <span>↗</span></button>
+          </div>
+          <div className="surface-grid">
+            {[
+              ["Nettside", "Oppetid, hastighet, status og flere lenker."],
+              ["Booking", "Tjenester, tidspunkter, kundeinfo og destinasjon."],
+              ["Kalender", "Google, Microsoft, timer og avtaler samlet."],
+              ["Shopify", "Salg, ordre, checkout og flere nettbutikker."],
+              ["SoMe", "Instagram, Facebook, X, Bluesky og innsikt."],
+              ["Team", "Ansatte, roller, leder, eier og timeregistrering."],
+              ["Rapporter", "Eksport til Excel og datavisualisering."],
+              ["AI", "Neste steg, oppfølging og raske forslag."]
+            ].map(([title, text]) => (
+              <article key={title}>
+                <small>{title.toUpperCase()}</small>
+                <b>{title}</b>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
       <section className="offer" id="tilbud">
         <div className="eyebrow">DETTE FÅR DU</div>
