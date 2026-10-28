@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { WorkHoursModule } from "@/components/work-hours-module";
+import { formatShopifyCount, formatShopifyMoney, formatShopifySales, SHOPIFY_METRIC_DESCRIPTION } from "@/lib/shopify-snapshot";
+import type { ShopifyOverview } from "@/lib/shopify-snapshot";
 
 type Theme = "local" | "local-dark";
 type ModuleId =
@@ -27,7 +29,7 @@ type ModuleId =
 
 type Module = { id: ModuleId; title: string; eyebrow: string };
 type WorkspaceConnection = { module_id: string; status: "configured" | "live"; settings: Record<string, string>; updated_at?: string };
-type ShopifySnapshot = { connected?: boolean; sales?: number; orders?: number; abandonedCheckouts?: number };
+type ShopifySnapshot = ShopifyOverview;
 type SocialSnapshot = { connected?: boolean; accounts?: Array<{ username?: string; followers?: number; topCountry?: string }>; posts?: Array<{ id: string; caption: string; likes: number; comments: number; permalink?: string | null }> };
 type AnalyticsSnapshot = { connected?: boolean; activeUsers?: number; sessions?: number; views?: number; engagementRate?: number; revenue?: number; reason?: string; updatedAt?: string };
 type SearchSnapshot = { connected?: boolean; clicks?: number; impressions?: number; ctr?: number; position?: number; reason?: string; updatedAt?: string };
@@ -51,7 +53,7 @@ type WebsiteStatus = {
 };
 
 const defaultModules: Module[] = [
-  { id: "sales", title: "Salg", eyebrow: "SHOPIFY" },
+  { id: "sales", title: "Netto betalt", eyebrow: "SHOPIFY" },
   { id: "funnel", title: "Kundereise", eyebrow: "SHOPIFY" },
   { id: "audience", title: "Publikum", eyebrow: "SOSIALE MEDIER" },
   { id: "tasks", title: "Neste steg", eyebrow: "VEDØY AI" },
@@ -603,20 +605,12 @@ function Workspace({
 
         <div className="chart-strip">
           <div>
-            <small>SALG SISTE 30 DAGER</small>
-            <strong>{shopify?.connected ? `${Math.round(shopify.sales || 0).toLocaleString("nb-NO")} kr` : "—"}</strong>
-            <span className="muted">{shopify?.connected ? `${shopify.orders || 0} ordre` : "Koble Shopify for data"}</span>
+            <small title={SHOPIFY_METRIC_DESCRIPTION}>NETTO BETALT · ORDRE OPPRETTET SISTE 30 DØGN</small>
+            <strong>{formatShopifySales(shopify)}</strong>
+            <span className="muted">{shopify?.connected ? `${formatShopifyCount(shopify.orders, true)} ordre` : "Koble Shopify for data"}</span>
+            {shopify?.reason && <span className="muted">{shopify.reason}</span>}
           </div>
-          <div className="line-chart">
-            <svg viewBox="0 0 500 100" preserveAspectRatio="none">
-              <path
-                d="M0 82 C50 70 80 83 120 62 S190 75 230 48 S290 64 330 38 S400 46 500 12"
-                fill="none"
-                stroke="var(--lime)"
-                strokeWidth="4"
-              />
-            </svg>
-          </div>
+          <div className="line-chart"><p className="muted">Daglig historikk er ikke koblet til.</p></div>
         </div>
 
         <div className="workspace-grid">
@@ -711,9 +705,12 @@ function ModuleBody({
   if (moduleId === "sales") {
     return (
       <>
-        <strong className="big-number">{shopify?.connected ? `${Math.round(shopify.sales || 0).toLocaleString("nb-NO")} kr` : "—"}</strong>
+        <strong className="big-number">{formatShopifySales(shopify)}</strong>
+        {shopify?.connected && (shopify.partial || (shopify.currencyTotals?.length ?? 0) > 1) && <ul aria-label="Netto betalt per valuta">{shopify.currencyTotals?.map((total) => <li key={total.currency}>{formatShopifyMoney(total.sales, total.currency)} · {total.stores} butikk{total.stores === 1 ? "" : "er"}{shopify.partial ? " (delvis datagrunnlag)" : ""}</li>)}</ul>}
+        <p className="module-muted">{SHOPIFY_METRIC_DESCRIPTION}</p>
+        {shopify?.reason && <p className="warning">{shopify.reason}</p>}
         <div className="card-foot">
-          <span>{shopify?.connected ? `${shopify.orders || 0} ordre` : "Ingen data ennå"}</span>
+          <span>{shopify?.connected ? `${formatShopifyCount(shopify.orders, true)} ordre` : "Ingen data ennå"}</span>
           <a className="module-inline-link" href="/connections?module=shopify">{configured ? "Innstillinger" : "Koble Shopify"}</a>
         </div>
         {sourceLabel && <small className="module-muted">Kilde: {sourceLabel}</small>}
@@ -726,20 +723,20 @@ function ModuleBody({
       <>
         <div className="funnel">
           <div>
-            <span>SESSIONS</span>
-            <b>{shopify?.connected ? shopify.orders || 0 : "—"}</b>
+            <span>ORDRE</span>
+            <b>{formatShopifyCount(shopify?.orders, shopify?.connected)}</b>
           </div>
           <div>
-            <span>I KASSE</span>
-            <b>{shopify?.connected ? shopify.abandonedCheckouts || 0 : "—"}</b>
+            <span>FORLATTE UTSJEKKINGER</span>
+            <b>{formatShopifyCount(shopify?.abandonedCheckouts, shopify?.connected)}</b>
           </div>
           <div>
-            <span>CHECKOUT</span>
+            <span>KONVERTERING</span>
             <b>—</b>
           </div>
         </div>
         <div className="card-foot">
-          <span className="warning">↘ Her stopper flest</span>
+          <span className="muted">Forlatte utsjekkinger og konvertering er ikke målt.</span>
         </div>
       </>
     );
@@ -947,3 +944,4 @@ function ThemePicker({ theme, changeTheme }: { theme: Theme; changeTheme: (x: Th
     </div>
   );
 }
+

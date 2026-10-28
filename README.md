@@ -78,3 +78,21 @@ SUPABASE_SERVICE_ROLE_KEY=
 `SHOPIFY_TOKEN_ENCRYPTION_KEY` bør være en tilfeldig verdi på minst 32 tegn. Ingen av variablene skal prefikses med `NEXT_PUBLIC_`.
 
 I Growth åpner du **Tilkoblinger → Shopify**, legger inn `.myshopify.com`-domenet og velger **Koble sikkert med Shopify**. Kunden godkjenner lesetilgang til ordre og analyse. Dashboardet kan vise valgt butikk eller samlet statistikk for alle tilkoblede butikker.
+
+### Hva Shopify-tallene betyr
+
+- **Netto betalt** er `netPaymentSet.shopMoney`: mottatte betalinger minus refusjoner, før gebyrer, for ordre **opprettet siste 30 døgn**, inklusive betalt frakt og avgifter. Dette er ikke regnskapsomsetning, netto bankoppgjør eller en transaksjonsrapport for betalinger datert i perioden. Testordre og kansellerte ordre er utelatt, også når en kansellert ordre har en betaling som ennå ikke er refundert. Ubetalte ordre kan inngå i antallet med null netto betaling.
+- Hele den faste datoperioden pagineres. Ved feil, tidsavbrudd, ugyldig beløp eller sidegrense returneres ingen totalsum for den butikken. Grensene er 25 sekunder og 100 sider à 250 ordre; større volumer krever bakgrunnssynk. En måling kan endres etter refusjoner og er ikke et historisk regnskapssnapshot.
+- Butikker med forskjellige valutaer vises separat. Ingen valutakurs antas. Dersom en butikk feiler, er samlede beløp og ordreantall ukjente; de tilgjengelige butikkene merkes som delvis datagrunnlag.
+- Forlatte utsjekkinger og konvertering er **ikke målt**. API-et returnerer `null` for forlatte utsjekkinger. Daglig historikk vises først når en ekte tidsserie er koblet til.
+
+Kilder: [Shopify Order (2026-01)](https://shopify.dev/docs/api/admin-graphql/2026-01/objects/Order#field-Order.fields.netPaymentSet) og [GraphQL-paginering](https://shopify.dev/docs/api/usage/pagination-graphql).
+
+Kjør regresjonstestene med Node.js 22.18 eller nyere (Node 24 anbefales):
+
+```sh
+npm run test:shopify
+```
+
+Testene bruker deterministiske API-svar og krever ingen Shopify- eller Supabase-nøkler. De dekker mer enn én side med ordre, refusjoner, ekskluderinger, feil/tidsgrenser, ukjente målinger og forskjellige valutaer.
+

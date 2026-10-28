@@ -1,6 +1,7 @@
 import "@shopify/shopify-api/adapters/node";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 import { ApiVersion, Session, shopifyApi } from "@shopify/shopify-api";
+import { collectShopifySnapshot, SHOPIFY_PAYMENT_QUERY } from "@/lib/shopify-snapshot";
 
 export const SHOPIFY_SCOPES = ["read_orders", "read_products", "read_customers", "read_analytics"];
 
@@ -37,24 +38,14 @@ export function shopifyClient(hostName: string) {
   return shopifyApi({ apiKey, apiSecretKey, scopes: SHOPIFY_SCOPES, hostName, apiVersion: ApiVersion.January26, isEmbeddedApp: false });
 }
 
-export async function fetchShopifySnapshot(hostName: string, shop: string, accessToken: string) {
+export async function fetchShopifySnapshot(hostName: string, shop: string, accessToken: string, now = new Date()) {
   const api = shopifyClient(hostName);
   const session = new Session({ id: `offline_${shop}`, shop, state: "", isOnline: false, accessToken });
   const client = new api.clients.Graphql({ session, apiVersion: ApiVersion.January26 });
-  const response = await client.request(`query VedoyGrowthSnapshot {
-    shop { name currencyCode }
-    orders(first: 100, sortKey: CREATED_AT, reverse: true) {
-      nodes { createdAt totalPriceSet { shopMoney { amount currencyCode } } }
-    }
-  }`);
-  const data = response.data as { shop: { name: string; currencyCode: string }; orders: { nodes: Array<{ createdAt: string; totalPriceSet: { shopMoney: { amount: string; currencyCode: string } } }> } };
-  const since = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const orders = data.orders.nodes.filter((order) => new Date(order.createdAt).getTime() >= since);
-  return {
+  return collectShopifySnapshot(
+    (variables) => client.request(SHOPIFY_PAYMENT_QUERY, { variables }),
     shop,
-    name: data.shop.name,
-    currency: data.shop.currencyCode,
-    sales: orders.reduce((sum, order) => sum + Number(order.totalPriceSet.shopMoney.amount), 0),
-    orders: orders.length,
-  };
+    { now },
+  );
 }
+

@@ -2,8 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { decryptShopifyToken, fetchShopifySnapshot, normalizeShopDomain } from "@/lib/shopify";
 import { getWorkspaceContext } from "@/lib/workspace";
+import { aggregateShopifySnapshots, shopifyPeriod } from "@/lib/shopify-snapshot";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(request: Request) {
   const context = await getWorkspaceContext(request);
@@ -17,16 +19,13 @@ export async function GET(request: Request) {
   const { data, error } = await query;
   if (error || !data?.length) return NextResponse.json({ connected: false, reason: "Ingen Shopify-butikk er koblet til." });
 
-  const snapshots = await Promise.allSettled(data.map((item) => fetchShopifySnapshot(new URL(request.url).host, item.shop_domain, decryptShopifyToken(item.encrypted_access_token))));
+  const now = new Date();
+  const snapshots = await Promise.allSettled(data.map(async (item) => fetchShopifySnapshot(new URL(request.url).host, item.shop_domain, decryptShopifyToken(item.encrypted_access_token), now)));
   const stores = snapshots.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
   if (!stores.length) return NextResponse.json({ connected: false, reason: "Shopify svarte ikke. Kontroller tilgangene og koble til på nytt." }, { status: 502 });
   return NextResponse.json({
-    connected: true,
-    sales: stores.reduce((sum, store) => sum + store.sales, 0),
-    orders: stores.reduce((sum, store) => sum + store.orders, 0),
-    abandonedCheckouts: 0,
-    stores,
-    partial: stores.length !== data.length,
+    ...aggregateShopifySnapshots(stores, data.length),
+    ...shopifyPeriod(now),
     updatedAt: new Date().toISOString(),
   });
 }
@@ -44,3 +43,4 @@ export async function DELETE(request: Request) {
   const { error } = await query;
   return error ? NextResponse.json({ error: "Kunne ikke fjerne Shopify-koblingen." }, { status: 500 }) : NextResponse.json({ ok: true });
 }
+
