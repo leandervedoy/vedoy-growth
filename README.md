@@ -1,80 +1,48 @@
-# Vedøy Growth
+# Vedøy Growth · Kunnskapsassistenten
 
-Vedøy Growth er en fullstack Next.js-arbeidsflate for små og mellomstore virksomheter. Innlogging, virksomhetsprofil, team, roller, dashboard-oppsett, notater, booking, kalender, timeregistrering og Vedøy Blogg lagres i Supabase.
+Praktisk kunnskap for bedrifter og organisasjoner som vil skape fremgang med hensyn til økonomi, mennesker og miljø.
+
+## Denne versjonen
+
+- Åpen forside og seks leksjoner med konkrete tiltak, eksempler og refleksjon.
+- Arbeidsflaten er stengt på serveren mens den utvikles. Gamle API-er og server actions er også sperret.
+- Registrering, innlogging og kontoside er implementert for en separat Supabase-database.
+- E-post og SMS velges uavhengig og er av som standard. Ingen utsendelser er aktivert.
+- Uten databaseoppsett viser skjemaene «åpner snart». De sender eller lagrer ingen registrering.
+
+Vedøy Kunnskapsassistent er i denne versjonen en veiviser med redaksjonelle leksjoner. Den gir ikke genererte KI-svar eller løfter om garantert suksess.
+
+## Se demoen
+
+Åpne [demo/vedoy-growth-demo.html](demo/vedoy-growth-demo.html) i nettleseren. Filen inneholder læringssidene og deaktiverte kontoforhåndsvisninger; den samler ikke inn opplysninger.
 
 ## Lokal oppstart
 
-1. Kopier `.env.example` til `.env.local` og fyll inn Supabase-verdiene.
-2. Kjør hele `supabase/schema.sql` i Supabase SQL Editor på et nytt prosjekt. På eksisterende produksjon er migrasjonene allerede kjørt.
-3. Installer og start:
+Bruk Node.js 22 eller 24 og npm. Prosjektet bruker `package-lock.json`.
 
-```powershell
-npm.cmd install
-npm.cmd run dev
+```sh
+npm ci
+npm run dev
 ```
 
-Åpne [http://localhost:3000](http://localhost:3000).
+Åpne http://localhost:3000. Ingen leverandørnøkler er nødvendige for læringssidene.
 
-## Produksjon på Vercel
+## Kontroll før publisering
 
-Legg variablene fra `.env.example` inn under Vercel → Project Settings → Environment Variables. Bare `NEXT_PUBLIC_*` kan være synlige i nettleseren. `SUPABASE_SERVICE_ROLE_KEY`, Shopify-token og Instagram-token skal alltid være server-only.
-
-Etter at miljøvariabler endres må appen redeployes.
-
-## Hva som virker uten leverandørnøkler
-
-- Supabase registrering og innlogging
-- virksomhetsprofil og onboarding
-- lagring av dashboard-moduler og private notater
-- teamoversikt og roller
-- booking, kalender og timeregistrering
-- Vedøy Blogg med utkast og publisering
-
-Ansattinvitasjoner krever `SUPABASE_SERVICE_ROLE_KEY`. Shopify og Instagram viser en ærlig frakoblet tilstand frem til de respektive servernøklene er satt.
-
-## Google Analytics og Search Console
-
-Growth bruker én server-side Google service account. Sett `GOOGLE_SERVICE_ACCOUNT_EMAIL` og `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` i Vercel, aktiver Google Analytics Data API og Search Console API i samme Google Cloud-prosjekt, og gi service account-adressen Viewer-tilgang i kundens GA4-egenskap og tilgang i Search Console.
-
-Kunden legger bare inn:
-
-- numerisk GA4 Property ID fra Analytics → Admin → Property details
-- Search Console-egenskapen nøyaktig som Google viser den, for eksempel `sc-domain:example.no` eller `https://example.no/`
-
-Measurement ID som starter med `G-` brukes til installasjon av Google-taggen, men er ikke Property ID-et Data API-et trenger.
-
-## Nettsidestatus og varsler
-
-Kjør nyeste `supabase/schema.sql` for tabellen `website_status_checks`. Dashboardet lagrer oppetid, responstid og score ved hver kontroll. E-postvarsler krever `RESEND_API_KEY`, en verifisert avsender i `ALERT_FROM_EMAIL`, varsele-post og terskel i nettsidetilkoblingen.
-
-## Vedøy-biblioteker
-
-Åpne Vedøy-biblioteker vises på `/libraries`. Første pakke ligger i `packages/vedoy-calender` og inneholder booking-adapter, konfliktkontroll, ledige tider og ICS-eksport.
-
-```powershell
-npm.cmd --prefix packages/vedoy-calender test
+```sh
+npm test
+npm run typecheck
+npm run build
 ```
 
-## Sikkerhet
+SQL- og HTTP-testene, aktivering av kontoer og leverandøroppsett er beskrevet i [lanseringsnotatet](docs/launch-readiness.md). Testene bruker syntetiske data; en ekte Auth-kontroll må gjentas etter at den separate databasen og e-postleveringen er konfigurert.
 
-Growth-tabellene har Row Level Security og minimale database-grants. Brukere får bare tilgang til egen virksomhet. Bloggartikler kan administreres av Growth-eiere, mens bare publiserte artikler er offentlig lesbare.
+## Aktivering
 
-Ikke legg hemmelige nøkler i Git, chat, klientkode eller `localStorage`.
-# Shopify-integrasjon
+Den offentlige siden kan publiseres nå med arbeidsflaten lukket og registrering deaktivert. Den separate Supabase-databasen har et oppgitt pristillegg på **10 USD per måned**, som krever eierens godkjenning før opprettelse. SMTP og avsender må deretter avklares. Ikke gjenbruk den eksisterende delte databasen eller kjør gamle migrasjoner i den nye.
 
-Vedøy Growth bruker Shopifys offisielle Node API-bibliotek og OAuth for å koble til én eller flere kundebutikker. Prisma-startmalen brukes ikke som en ekstra applikasjon eller database; Growth beholder Supabase som felles datalag.
+Følg [docs/launch-readiness.md](docs/launch-readiness.md). `GROWTH_WORKSPACE_OPEN` skal fortsatt være `false`; aktivering av kontoer åpner ikke arbeidsflaten.
 
-Opprett en app i Shopify Dev Dashboard og legg inn callback-adressen `https://growth.vedoy.store/api/shopify/callback`.
+## Tidligere arbeidsflate
 
-Legg disse hemmelige servervariablene i `.env.local` og i Vercel:
-
-```env
-SHOPIFY_API_KEY=
-SHOPIFY_API_SECRET=
-SHOPIFY_TOKEN_ENCRYPTION_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-```
-
-`SHOPIFY_TOKEN_ENCRYPTION_KEY` bør være en tilfeldig verdi på minst 32 tegn. Ingen av variablene skal prefikses med `NEXT_PUBLIC_`.
-
-I Growth åpner du **Tilkoblinger → Shopify**, legger inn `.myshopify.com`-domenet og velger **Koble sikkert med Shopify**. Kunden godkjenner lesetilgang til ordre og analyse. Dashboardet kan vise valgt butikk eller samlet statistikk for alle tilkoblede butikker.
+Den eldre koden er bevart bak sperren. Eldre tekniske notater finnes i [docs/legacy-workspace.md](docs/legacy-workspace.md) og gjelder ikke den offentlige lanseringen.
