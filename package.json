@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:shopify": "node --experimental-strip-types --test tests/shopify-*.test.mjs"
   },
   "dependencies": {
     "@shopify/shopify-api": "12.3.0",
@@ -26,3 +27,4 @@
     "typescript": "^5.6.3"
   }
 }
+
