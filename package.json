@@ -6,14 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "tsc --noEmit",
+    "test": "node --experimental-strip-types tests/progress/validation.test.mjs && node --experimental-strip-types tests/progress/launch.test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@shopify/shopify-api": "12.3.0",
     "@supabase/supabase-js": "^2.112.3",
     "bootstrap": "5.3.8",
     "date-fns": "^4.4.0",
-    "next": "14.2.15",
+    "next": "15.5.28",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "vercel": "^58.4.4",

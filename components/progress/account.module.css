@@ -1,0 +1,96 @@
+.card {
+  max-width: 700px;
+  width: calc(100% - 12%);
+  margin: 0 auto 80px;
+  padding: clamp(25px, 4.3vw, 44px);
+  border: 1px solid #d7dccf;
+  border-radius: 9px;
+  background: #fffef8;
+  color: #203c2d;
+  font-family: Manrope, Arial, sans-serif;
+  line-height: 1.65;
+}
+.card *, .card *::before, .card *::after { box-sizing: border-box; }
+.card .formFields, .card .preferences { min-width: 0; border: 0; padding: 0; margin: 0; }
+.card .formFields:disabled { opacity: .65; }
+.card .sectionTitle { display: block; float: none; width: auto; margin: 0 0 10px; padding: 0; color: #203c2d; font: 650 1.25rem/1.4 Manrope, Arial, sans-serif; letter-spacing: -.025em; }
+.card .sectionIntro { color: #58665b; font-size: .85rem; margin: 0 0 26px; line-height: 1.7; }
+.fields, .credentials { display: grid; gap: 20px; }
+.credentials { margin-top: 20px; }
+.field, .phoneField { min-width: 0; }
+.card .field > label, .card .phoneField > label { display: block; margin: 0 0 7px; color: #294332; font-size: .83rem; font-weight: 600; line-height: 1.55; }
+.card .input { display: block; width: 100%; min-height: 49px; margin: 0; padding: 12px 13px; border: 1px solid #bfcaba; border-radius: 5px; background: #fffefb; color: #203c2d; font: 400 1rem/1.5 Manrope, Arial, sans-serif; box-shadow: none; }
+.card .input::placeholder { color: #7b8575; opacity: 1; }
+.card .input:hover:not(:disabled) { border-color: #7b926b; }
+.card .input:focus { outline: 3px solid #63853e; outline-offset: 2px; border-color: #4c6c3c; }
+.card .input:disabled { cursor: not-allowed; background: #f4f4ec; }
+.card select.input { padding-right: 32px; cursor: pointer; }
+.card .fieldHint { margin: 8px 0 0; color: #5c6a56; font-size: .75rem; line-height: 1.7; }
+.passwordField { position: relative; }
+.card .passwordField .input { padding-right: 73px; }
+.card .passwordToggle { position: absolute; inset: 3px 3px 3px auto; min-width: 57px; border: 0; border-radius: 3px; background: transparent; color: #405d32; font: 600 .75rem Manrope, Arial, sans-serif; cursor: pointer; }
+.card .passwordToggle:hover:not(:disabled) { background: #edf1e6; }
+.card .preferences { margin-top: 31px; padding-top: 25px; border-top: 1px solid #dfe4d6; }
+.card .preferences legend { float: none; width: 100%; padding: 0; margin: 0; color: #294332; font-size: .96rem; line-height: 1.6; font-weight: 650; }
+.preferences legend > span { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 3px; background: #eaf0e1; color: #5c7048; font-size: .65rem; font-weight: 500; vertical-align: middle; }
+.choices { display: grid; gap: 10px; margin-top: 16px; }
+.card .choice { display: flex; gap: 12px; align-items: flex-start; min-height: 57px; padding: 15px; margin: 0; border: 1px solid #d7dece; border-radius: 5px; background: #fafbf4; color: #294332; font-size: .81rem; font-weight: 400; line-height: 1.7; cursor: pointer; }
+.card .choice:has(input:checked) { border-color: #7c9566; background: #edf3e5; }
+.card .checkbox { appearance: auto; -webkit-appearance: checkbox; display: block; position: static; flex: 0 0 19px; width: 19px; height: 19px; margin: 2px 0 0; padding: 0; accent-color: #365b38; cursor: pointer; border-radius: 2px; }
+.card .checkbox:focus-visible, .card button:focus-visible, .card a:focus-visible { outline: 3px solid #789b55; outline-offset: 4px; border-radius: 3px; }
+.card .checkbox:disabled { cursor: not-allowed; }
+.phoneField { padding: 19px 0 0 31px; }
+.card .deliveryNote { margin: 16px 0 0; color: #68715f; font-size: .72rem; line-height: 1.7; }
+.card .privacyChoice { display: flex; align-items: flex-start; gap: 12px; margin: 29px 0 0; color: #3e5139; font-size: .8rem; line-height: 1.8; cursor: pointer; }
+.card .privacyChoice a, .card .formFoot a, .card .callbackHint a, .card .accountBottom > a, .card .errorActions > a { color: #355e32; text-decoration: underline; text-underline-offset: 3px; }
+.card .submitButton, .card .buttonLink { display: inline-flex; align-items: center; justify-content: center; gap: 15px; min-height: 51px; padding: 13px 21px; border: 1px solid #244f38; border-radius: 5px; background: #244f38; color: #fffef8; font: 600 .86rem/1.5 Manrope, Arial, sans-serif; text-decoration: none; cursor: pointer; }
+.card .submitButton { width: 100%; margin-top: 26px; }
+.card .submitButton > span:not(.spinner), .card .buttonLink > span { font-size: 1.1rem; }
+.card .submitButton:hover:not(:disabled), .card .buttonLink:hover { background: #183c29; border-color: #183c29; }
+.card .submitButton:disabled { background: #e0e6d8; border-color: #c7d1bd; color: #62725a; cursor: not-allowed; }
+.card .formFoot { margin: 20px 0 0; text-align: center; color: #5c6a56; font-size: .78rem; }
+.card .notice { margin: 23px 0 0; padding: 17px 19px; border: 1px solid #d3dbc7; border-radius: 5px; font-size: .83rem; line-height: 1.75; }
+.card .notice:focus { outline: 3px solid #63853e; outline-offset: 3px; }
+.card .error { background: #fff2ec; border-color: #e0bfae; color: #863e27; }
+.card .success { background: #ecf3e5; border-color: #b6cba2; color: #36532c; }
+.card .opening { margin: 0 0 29px; background: #edf1e3; border-color: #d0d9bf; }
+.card .opening h2 { margin: 0 0 9px; color: #304b28; font: 650 1.18rem/1.4 Manrope, Arial, sans-serif; letter-spacing: -.02em; }
+.card .opening p { margin: 0; color: #56654b; font-size: .81rem; line-height: 1.75; }
+.card .opening a { display: inline-block; margin-top: 11px; padding-block: 5px; font-size: .76rem; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.receipt { padding: 5px 0; }
+.receiptIcon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 21px; background: #e5edd9; border-radius: 50%; color: #4e6b37; font-size: 1.5rem; }
+.card .receipt h2 { margin: 0 0 13px; font: 400 2.5rem/1.2 Georgia, serif; letter-spacing: -.04em; }
+.card .receipt p { margin: 0 0 25px; color: #58665b; font-size: .9rem; line-height: 1.8; }
+.identity { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding-bottom: 25px; margin-bottom: 22px; border-bottom: 1px solid #dfe4d6; }
+.identity > div { min-width: 0; }
+.card .identityLabel { margin: 0 0 5px; color: #697c55; font-size: .62rem; letter-spacing: .1em; font-weight: 650; }
+.card .email { margin: 0; color: #294332; font-size: .93rem; font-weight: 600; overflow-wrap: anywhere; }
+.emailStatus { padding: 5px 9px; border-radius: 3px; background: #edf1e5; color: #5b6d48; font-size: .65rem; white-space: nowrap; }
+.workspaceNote { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 28px; color: #60714e; }
+.workspaceNote > span { flex-shrink: 0; font-size: 1.5rem; line-height: 1.15; }
+.card .workspaceNote p { margin: 0; font-size: .78rem; line-height: 1.75; }
+.withdrawal { margin-top: 15px; }
+.card .withdrawal p { margin: 6px 0 0; color: #607057; font-size: .73rem; line-height: 1.7; }
+.card .plainButton { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; padding: 9px 0; border: 0; background: transparent; color: #365c34; font: 600 .78rem/1.5 Manrope, Arial, sans-serif; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.card .plainButton:disabled { color: #77816e; text-decoration: none; cursor: not-allowed; }
+.card .unsavedNote { margin: 11px 0 0; color: #75643e; font-size: .72rem; text-align: center; }
+.accountBottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 26px; padding-top: 18px; border-top: 1px solid #dfe4d6; }
+.accountBottom > a { font-size: .75rem; padding-block: 9px; }
+.card .loading { display: flex; align-items: center; gap: 13px; margin: 8px 0; color: #4d6440; font-size: .9rem; }
+.spinner { display: inline-block; width: 17px; height: 17px; flex: 0 0 17px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: turn .8s linear infinite; }
+.errorActions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 23px; font-size: .8rem; }
+.card .secondaryButton { min-height: 45px; padding: 10px 17px; border: 1px solid #8b9f78; border-radius: 4px; background: #f4f7ed; color: #3f5c31; font: 600 .8rem/1.5 Manrope, Arial, sans-serif; cursor: pointer; }
+.card .secondaryButton:hover { background: #e7eedc; }
+.card .callbackHint { margin: 20px 0 0; color: #66765d; font-size: .78rem; }
+.srOnly, .honeypot { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+@keyframes turn { to { transform: rotate(360deg); } }
+@media (max-width: 520px) {
+  .card { padding: 25px 21px; margin-bottom: 55px; }
+  .card .sectionTitle { font-size: 1.14rem; }
+  .card .choice { padding: 13px 12px; gap: 10px; }
+  .phoneField { padding-left: 0; }
+  .accountBottom { align-items: flex-start; flex-wrap: wrap; gap: 5px 20px; }
+  .card .notice { padding: 15px; }
+  .card .opening h2 { font-size: 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
