@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { WorkHoursModule } from "@/components/work-hours-module";
-import { formatShopifyCount, formatShopifyMoney, formatShopifySales, SHOPIFY_METRIC_DESCRIPTION } from "@/lib/shopify-snapshot";
+import { formatShopifyCount, formatShopifyMoney, formatShopifySales, loadShopifyOverview, SHOPIFY_METRIC_DESCRIPTION } from "@/lib/shopify-snapshot";
 import type { ShopifyOverview } from "@/lib/shopify-snapshot";
 
 type Theme = "local" | "local-dark";
@@ -529,7 +529,7 @@ function Workspace({
     setRefreshing(true);
     try {
       await Promise.allSettled([
-        fetch("/api/shopify").then((response) => response.json()).then((data) => setShopify(data)),
+        loadShopifyOverview(() => fetch("/api/shopify", { cache: "no-store" })).then(setShopify),
         fetch("/api/social").then((response) => response.json()).then((data) => {
           setSocial(data);
           if (data.accounts?.[0]?.username) setSocialUsername(data.accounts[0].username);

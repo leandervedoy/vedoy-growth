@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { aggregateShopifySnapshots, collectShopifySnapshot, formatShopifyCount, formatShopifySales, shopifyPeriod } from "../lib/shopify-snapshot.ts";
+import { aggregateShopifySnapshots, collectShopifySnapshot, formatShopifyCount, formatShopifySales, loadShopifyOverview, shopifyPeriod } from "../lib/shopify-snapshot.ts";
 
 const now = new Date("2026-10-29T00:00:00.000Z");
 const shop = "example.myshopify.com";
@@ -115,4 +115,67 @@ test("frontend distinguishes unavailable measurements from a measured zero", () 
   assert.equal(formatShopifyCount(0, true), "0");
   assert.equal(formatShopifyCount(12, false), "—");
   assert.equal(formatShopifySales({ connected: true, sales: 100 }), "—");
+});
+
+test("full refunds, unpaid orders and negative net payments retain Shopify values", async () => {
+  const result = await collectShopifySnapshot(async () => response([
+    order(1, "0.00"), order(2, "0.00"), order(3, "-25.50"),
+  ]), shop, { now });
+  assert.equal(result.orders, 3);
+  assert.equal(result.sales, -25.5);
+});
+
+test("both period boundaries are included, adjacent instants are excluded", async () => {
+  const period = shopifyPeriod(now);
+  const result = await collectShopifySnapshot(async () => response([
+    order(1, "1", { createdAt: period.periodStart }),
+    order(2, "2", { createdAt: period.periodEnd }),
+    order(3, "100", { createdAt: new Date(Date.parse(period.periodStart) - 1).toISOString() }),
+    order(4, "100", { createdAt: new Date(Date.parse(period.periodEnd) + 1).toISOString() }),
+  ]), shop, { now });
+  assert.equal(result.orders, 2);
+  assert.equal(result.sales, 3);
+});
+
+test("missing GraphQL payloads, money and pagination metadata fail closed", async () => {
+  for (const payload of [null, {}, { data: null }, { data: { shop: {} } },
+    response([order(1, "1", { netPaymentSet: null })]),
+    { data: { ...response().data, orders: { nodes: [] } } },
+    { data: { ...response().data, orders: { nodes: [], pageInfo: { hasNextPage: true, endCursor: null } } } },
+  ]) await assert.rejects(collectShopifySnapshot(async () => payload, shop, { now }));
+});
+
+test("currency changes between pages cannot become a mixed total", async () => {
+  let page = 0;
+  await assert.rejects(collectShopifySnapshot(async () => ++page === 1
+    ? response([order(1)], "next") : response([], null, "USD"), shop, { now }), /valuta endret/);
+});
+
+for (const status of [401, 403, 429, 500]) {
+  test(`HTTP ${status} never keeps previous successful measurements`, async () => {
+    let displayed = aggregateShopifySnapshots([store("NOK", 123)]);
+    displayed = await loadShopifyOverview(async () => new Response(JSON.stringify(displayed), { status }));
+    assert.equal(displayed.connected, false);
+    assert.equal(displayed.sales, null);
+    assert.equal(formatShopifySales(displayed), "—");
+    assert.match(displayed.reason, /Tidligere tall er skjult/);
+  });
+}
+
+test("network, HTML and malformed JSON responses replace stale measurements", async () => {
+  for (const request of [async () => { throw new TypeError("network failed"); },
+    async () => new Response("<html>error</html>"), async () => new Response("null"),
+    async () => new Response("{}")]) {
+    const result = await loadShopifyOverview(request);
+    assert.equal(result.connected, false);
+    assert.equal(result.orders, null);
+  }
+});
+
+test("successful refresh preserves measured zero and unknown checkout", async () => {
+  const summary = aggregateShopifySnapshots([store("NOK", 0, 0)]);
+  const result = await loadShopifyOverview(async () => Response.json(summary));
+  assert.equal(result.sales, 0);
+  assert.equal(result.orders, 0);
+  assert.equal(result.abandonedCheckouts, null);
 });

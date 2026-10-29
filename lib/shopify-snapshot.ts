@@ -141,7 +141,7 @@ export function aggregateShopifySnapshots(stores: ShopifyStoreSnapshot[], expect
     group.stores += 1;
     grouped.set(store.currency, group);
   }
-  const currencyTotals = [...grouped.values()].map((total) => ({ ...total, sales: Number(total.sales.toFixed(6)) })).sort((a, b) => a.currency.localeCompare(b.currency));
+  const currencyTotals = Array.from(grouped.values()).map((total) => ({ ...total, sales: Number(total.sales.toFixed(6)) })).sort((a, b) => a.currency.localeCompare(b.currency));
   const partial = stores.length !== expectedStores;
   const singleCurrency = !partial && currencyTotals.length === 1;
   return {
@@ -173,4 +173,18 @@ export function formatShopifySales(snapshot: ShopifyOverview | null) {
 
 export function formatShopifyCount(value: number | null | undefined, connected?: boolean) {
   return connected && typeof value === "number" && Number.isInteger(value) && value >= 0 ? value.toLocaleString("nb-NO") : "—";
+}
+
+/** Always replace stale measurements when transport, HTTP or decoding fails. */
+export async function loadShopifyOverview(request: () => Promise<Response>): Promise<ShopifyOverview> {
+  try {
+    const response = await request();
+    const data = await response.json();
+    if (!response.ok) throw new Error("Shopify-data kunne ikke oppdateres. Prøv igjen.");
+    if (!data || typeof data.connected !== "boolean") throw new Error("Ugyldig svar fra Shopify-målingen.");
+    return data;
+  } catch {
+    return { connected: false, sales: null, orders: null, abandonedCheckouts: null,
+      reason: "Shopify-data kunne ikke oppdateres. Tidligere tall er skjult. Prøv igjen." };
+  }
 }

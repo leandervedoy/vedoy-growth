@@ -94,5 +94,15 @@ Kjør regresjonstestene med Node.js 22.18 eller nyere (Node 24 anbefales):
 npm run test:shopify
 ```
 
-Testene bruker deterministiske API-svar og krever ingen Shopify- eller Supabase-nøkler. De dekker mer enn én side med ordre, refusjoner, ekskluderinger, feil/tidsgrenser, ukjente målinger og forskjellige valutaer.
+Testene bruker deterministiske API-svar og krever ingen Shopify- eller Supabase-nøkler. Kjør `npm ci` først for SDK-testene. De dekker mer enn én side med ordre, refusjoner, ekskluderinger, feil/tidsgrenser, ukjente målinger og forskjellige valutaer.
+
+### Gjennomgang 29. oktober 2026
+
+- 29 automatiserte tester bestått på Node 24.22.1, inkludert den installerte Shopify-SDK-en med simulert HTTP 401/403/429/500 og GraphQL-feil. Dette er ikke live-integrasjonstester.
+- `npm ci --ignore-scripts --no-audit --no-fund` og full `npm run build` bestått. npm-låsefilen er synkronisert; en Map-iterator i den nye modulen er rettet for prosjektets ES5 TypeScript-target.
+- Mislykket oppdatering skjuler tidligere Shopify-tall med et tydelig varsel. Databasefeil returneres som 503, og ugyldig butikkfilter som 400, i stedet for å vise misvisende tilkoblingsstatus eller måle alle butikker.
+- En autorisert, skrivebeskyttet Shopify-kobling kjørte målespørringen over tre sider med én ordre per side. Resultatet ble kontrollert mot en samlet forespørsel og kjørt gjennom beregningsmodulen lokalt. Ingen ordre eller kundedata ble endret; ingen butikkdata eller tokens er inkludert i repositoryet.
+- Denne live-kontrollen brukte en separat Shopify-kobling. Growths OAuth, token-dekryptering, Supabase-tilkobling, produksjonsrettigheter og hele `/api/shopify`-flyten er fortsatt ikke verifisert med autentisert Growth-bruker. API-versjonen til koblingen kunne ikke velges; SDK-testen kontrollerer eksplisitt `2026-01`.
+- Live-utvalget inneholdt ingen testordre, kanselleringer eller refusjonstilfeller. Disse, flervaluta og API-feil er kun verifisert med simulerte svar. Pagineringen er heller ikke en transaksjonell snapshot-lesing: refusjoner kan endre eldre sider mens innhentingen pågår.
+- Installasjonen varslet om sikkerhetsproblemer i eksisterende Next.js 14.2.15 og tar-avhengigheter. Avhengighetsoppgradering og autentisert ende-til-ende-test gjenstår før produksjonsgodkjenning. Ingen merge eller produksjonsutrulling ble gjort som del av gjennomgangen.
 

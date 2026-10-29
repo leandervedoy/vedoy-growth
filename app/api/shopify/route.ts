@@ -12,12 +12,15 @@ export async function GET(request: Request) {
   if (!context) return NextResponse.json({ connected: false, reason: "Logg inn for å se Shopify-data." }, { status: 401 });
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) return NextResponse.json({ connected: false, reason: "Shopify er ikke ferdig konfigurert på serveren." }, { status: 503 });
-  const selected = normalizeShopDomain(new URL(request.url).searchParams.get("shop") || "");
+  const requestedShop = new URL(request.url).searchParams.get("shop");
+  const selected = normalizeShopDomain(requestedShop || "");
+  if (requestedShop && !selected) return NextResponse.json({ connected: false, reason: "Ugyldig butikkvalg." }, { status: 400 });
   const admin = createClient(context.url, serviceKey, { auth: { persistSession: false } });
   let query = admin.from("shopify_store_connections").select("shop_domain,encrypted_access_token,updated_at").eq("business_id", context.business.id).eq("status", "connected");
   if (selected) query = query.eq("shop_domain", selected);
   const { data, error } = await query;
-  if (error || !data?.length) return NextResponse.json({ connected: false, reason: "Ingen Shopify-butikk er koblet til." });
+  if (error) return NextResponse.json({ connected: false, reason: "Kunne ikke lese Shopify-tilkoblingene. Prøv igjen." }, { status: 503 });
+  if (!data?.length) return NextResponse.json({ connected: false, reason: "Ingen Shopify-butikk er koblet til." });
 
   const now = new Date();
   const snapshots = await Promise.allSettled(data.map(async (item) => fetchShopifySnapshot(new URL(request.url).host, item.shop_domain, decryptShopifyToken(item.encrypted_access_token), now)));
