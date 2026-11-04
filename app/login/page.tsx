@@ -13,7 +13,7 @@ export default function LoginPage() {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return setError(data.error || "Kunne ikke logge inn.");
     localStorage.setItem("vedoy-session", "active");
-    try { const profileResponse = await fetch("/api/workspace/profile"); const profileData = profileResponse.ok ? await profileResponse.json() : null; window.location.href = profileData?.profile ? "/" : "/onboarding"; } catch { window.location.href = "/"; }
+    try { const profileResponse = await fetch("/api/workspace/profile"); const profileData = profileResponse.ok ? await profileResponse.json() : null; window.location.href = profileData?.profile ? "/studio" : "/onboarding"; } catch { window.location.href = "/studio"; }
   }
 
   function startVedoyLogin() {
