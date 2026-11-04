@@ -2,6 +2,13 @@
 
 Vedøy Growth er en fullstack Next.js-arbeidsflate for små og mellomstore virksomheter. Innlogging, virksomhetsprofil, team, roller, dashboard-oppsett, notater, booking, kalender, timeregistrering og Vedøy Blogg lagres i Supabase.
 
+## Ruter og innlogging
+
+- `/`: Offentlig Growth-forside. Eksisterende innloggede brukere kan fortsatt åpne arbeidsflaten her.
+- `/studio`: Anbefalt adresse for Growth-dashboardet. Uinnloggede besøkende videresendes til `/login`; nye bedrifter til `/onboarding`.
+- Etter innlogging eller fullført onboarding åpnes `/studio`.
+- `/studio` er en brukergrensesnittrute, ikke en egen Supabase-instans eller en integrasjon med nettstedet vedoystudio.no. API-endepunkter må fortsatt håndheve tilgang.
+
 ## Lokal oppstart
 
 1. Kopier `.env.example` til `.env.local` og fyll inn Supabase-verdiene.
